@@ -14,4 +14,4 @@ const connectToDB = async () => {
   }
 };
 
-module.exports = connectToDB;
+module.exports = connectToDB; // Use module.exports for CommonJS

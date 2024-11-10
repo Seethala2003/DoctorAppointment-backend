@@ -1,27 +1,23 @@
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
 
-module.exports = (req, res, next) => {
+const authMiddleware = (req, res, next) => {
+  const token = req.header('Authorization')?.split(" ")[1];  // Get token from Authorization header
+  console.log("Token:", token);  // Check if token is retrieved
+
+  if (!token) {
+    return res.status(401).json({ message: 'No token, authorization denied' });
+  }
+
   try {
-    const authorizationHeader = req.headers["authorization"];
-    if (!authorizationHeader) {
-      return res
-        .status(401)
-        .send({ message: "Authorization header missing", success: false });
-    }
-
-    const token = authorizationHeader.split(" ")[1];
-    jwt.verify(token, process.env.JWT_KEY, (err, decode) => {
-      if (err) {
-        return res
-          .status(401) // Changed from 200 to 401 for invalid token
-          .send({ message: "Token is not valid", success: false });
-      } else {
-        req.userId = decode.id; // Set userId on req, not on req.body
-        next();
-      }
-    });
-  } catch (error) {
-    console.error(error); 
-    res.status(500).send({ message: "Internal server error", success: false });
+    const decoded = jwt.verify(token, process.env.JWT_KEY);  // Verify the token with the secret
+    req.userId = decoded.id;  // Attach the user data from the token to the request
+    console.log("User ID attached to request:", req.userId);  // Log the userId for verification
+    next();
+  } catch (err) {
+    console.error(err);
+    return res.status(401).json({ message: 'Token is not valid' });
   }
 };
+
+
+module.exports = authMiddleware;

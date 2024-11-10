@@ -29,13 +29,23 @@ const updateDoctorProfileController = async (req, res) => {
 
 const getAllDoctorAppointmentsController = async (req, res) => {
   try {
+    // Find doctor by userId
     const doctor = await docSchema.findOne({ userId: req.userId });
+
+    // Log doctor ID to confirm it's retrieved correctly
+    console.log("Doctor ID:", doctor ? doctor._id : "Doctor not found");
 
     if (!doctor) {
       return res.status(404).send({ message: "Doctor not found", success: false });
     }
 
-    const allAppointments = await appointmentSchema.find({ doctorId: doctor._id }).populate("userId", "fullName email phone");
+    // Retrieve all appointments for the doctor
+    const allAppointments = await appointmentSchema
+      .find({ doctorId: doctor._id })
+      .populate("userId", "fullName email phone");
+
+    // Log appointments to confirm they are retrieved correctly
+    console.log("All Appointments:", allAppointments);
 
     return res.status(200).send({
       message: "All the appointments are listed below.",
@@ -47,6 +57,7 @@ const getAllDoctorAppointmentsController = async (req, res) => {
     return res.status(500).send({ message: "Something went wrong", success: false });
   }
 };
+
 
 const handleStatusController = async (req, res) => {
   try {
@@ -71,6 +82,7 @@ const handleStatusController = async (req, res) => {
     user.notification.push({
       type: "status-updated",
       message: `Your appointment has been ${status}`,
+      onClickPath: `/appointments/${appointmentId}`, // Include the onClickPath
     });
 
     await user.save();

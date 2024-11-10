@@ -1,8 +1,9 @@
-const User = require("../models/userModel");
-const Doc = require("../models/docModel");
-const Appointment = require("../models/appointmentModel");
+const User = require("../models/userModel.js");
+const Doc = require("../models/docModel.js");
+const Appointment = require("../models/appointmentModel.js");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const mongoose = require('mongoose');
 
 // User Registration
 const registerController = async (req, res) => {
@@ -39,6 +40,7 @@ const registerController = async (req, res) => {
 // User Login
 const loginController = async (req, res) => {
   const { email, password } = req.body;
+  console.log(email)
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required", success: false });
@@ -66,10 +68,12 @@ const loginController = async (req, res) => {
 
 // Doctor Registration
 const registerDoctorController = async (req, res) => {
-  const { fullName, email, phone, address, specialization, experience, fees, timings } = req.body.doctor;
+  console.log("Request body received:", req.body);
+  const { fullName, email, phone, address, specialization, experience, fees, timings } = req.body;
   const userId = req.userId; // Use the userId from the middleware
 
   if (!fullName || !email || !phone || !address || !specialization || !experience || !fees || !timings) {
+    console.log("Missing fields in the request");
     return res.status(400).json({ message: "All fields are required", success: false });
   }
 
@@ -77,6 +81,7 @@ const registerDoctorController = async (req, res) => {
     const user = await User.findById(userId);
 
     if (!user) {
+      console.log("User not found:", userId);
       return res.status(404).json({ message: "User not found", success: false });
     }
 
@@ -96,6 +101,7 @@ const registerDoctorController = async (req, res) => {
     user.isDoctor = true;
     await user.save();
 
+    console.log("Doctor registered successfully for user:", userId);
     res.status(201).json({ success: true, message: "Doctor registered successfully" });
   } catch (error) {
     console.error("Doctor registration error:", error);
@@ -142,17 +148,22 @@ const bookAppointmentController = async (req, res) => {
       status: 'pending',
     });
 
+    console.log("****appoint data***");
+    console.log(appointment);
+
     if (req.file) {
       appointment.document = file.buffer; // Save the file buffer to the appointment 
       }
 
-    await appointment.save();
-    res.status(201).json({ success: true, message: "Appointment booked successfully", data: appointment });
-  } catch (error) {
-    console.error("Booking appointment error:", error);
-    res.status(500).json({ message: "Something went wrong", success: false });
-  }
-};
+      await appointment.save(); 
+      console.log("Appointment created with userId:", userId); // Log userId 
+      console.log("Appointment created:", appointment); // Log the appointment
+      res.status(201).json({ success: true, message: "Appointment booked successfully", data: appointment }); 
+    } catch (error) { 
+      console.error("Booking appointment error:", error); 
+      res.status(500).json({ message: "Something went wrong", success: false }); 
+    } 
+  };
 
 // Get User Data
 const getUserDataController = async (req, res) => {
@@ -204,20 +215,116 @@ const deleteAllNotificationsController = async (req, res) => {
     res.status(500).json({ message: "Something went wrong", success: false }); 
   } 
 }; 
-
+/*
 const getUserAppointmentsController = async (req, res) => {
   try {
-    const userId = req.userId; // Assuming userId is set in authMiddleware
-    const appointments = await appointmentSchema.find({ userId }).populate("doctorId", "fullName email phone");
-    if (!appointments) {
+    console.log(req);
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(400).send({ message: "User ID is required" });
+    }
+
+    console.log("Fetching appointments for userId:", userId);
+
+    // const User = mongoose.model('User');  
+
+    // console.log("****USer****");
+    // console.log(User);
+
+    // // Find the user document based on the userInfo._id field
+    // const user = await User.findOne({ "_id": '672e2fe23377ea0d6128cd83' });
+    // console.log("USerrrrr");
+    // console.log(user);
+
+    // if (user) {
+    //   // Return the userId field from the found user document
+    //   console.log('userId:', user.userId);  // This is the userId field
+    //   return user.userId;
+    // } else {
+    //   console.log('No user found with the given userInfo._id');
+    //   return null;
+    // }
+
+    //console.log("Fetching appointments for userId:", userId); // Log userId
+   // console.log("Type of userId:", typeof userId); 
+    
+    // Log type of userId for verification
+
+    const appointmentSchema = new mongoose.Schema({
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' },
+      // other fields
+  });
+
+
+  const Appointment = mongoose.models.Appointment || mongoose.model('Appointment', appointmentSchema);
+
+
+
+  console.log("***Appointment****");
+  console.log(appointmentSchema);
+
+ 
+  const appointments = await Appointment.find({ "userInfo._id": userId })
+  .populate("doctorId", "fullName email phone");
+     console.log(typeof userId, userId);
+    //const appointments = await Appointment.find({ userId: req.user.id });
+    console.log("Appointments fetched:", appointments); // Log appointments for debugging
+
+
+
+    if (!appointments || appointments.length === 0) {
       return res.status(404).send({ message: "No appointments found", success: false });
     }
-    return res.status(200).send({ message: "Appointments fetched successfully", success: true, data: appointments });
+
+    return res.status(200).send({
+      message: "Appointments fetched successfully",
+      success: true,
+      data: appointments
+    });
+
   } catch (error) {
-    console.log("Error fetching appointments: ", error);
+    console.log("Error fetching appointments:", error);
     return res.status(500).send({ message: "Something went wrong", success: false });
   }
 };
+
+*/
+
+const getUserAppointmentsController = async (req, res) => {
+  try {
+    const doctorId = req.userId;
+    if (!doctorId) {
+      return res.status(400).send({ message: "Doctor ID is required" });
+    }
+
+    console.log("Fetching appointments for doctorId (as string):", doctorId);
+    console.log("Doctor ID type:", typeof doctorId);
+
+    // Fetch appointments where the doctorId matches (keeping it as a string)
+    const appointments = await Appointment.find({ doctorId: doctorId })
+      .populate("doctorId", "fullName email phone");
+
+    console.log("Appointments fetched:", appointments);
+    console.log("Appointments length:", appointments.length);
+
+    if (!appointments || appointments.length === 0) {
+      return res.status(404).send({ message: "No appointments found", success: false });
+    }
+
+    return res.status(200).send({
+      message: "Appointments fetched successfully",
+      success: true,
+      data: appointments
+    });
+
+  } catch (error) {
+    console.log("Error fetching appointments:", error);
+    return res.status(500).send({ message: "Something went wrong", success: false });
+  }
+};
+
+
 
 
 module.exports = { registerController, loginController, registerDoctorController, getAllDoctorsController, bookAppointmentController, getUserDataController, markAllNotificationsReadController, deleteAllNotificationsController, getUserAppointmentsController};

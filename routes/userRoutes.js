@@ -3,6 +3,7 @@ const { registerController, registerDoctorController, loginController, getAllDoc
 const authMiddleware = require("../middlewares/authMiddleware");
 const multer = require("multer"); 
 
+
 const storage = multer.memoryStorage(); 
 const upload = multer({ storage: storage });
 
@@ -29,10 +30,17 @@ router.post("/getuserdata", authMiddleware, getUserDataController);
 // Mark All Notifications as Read 
 router.post("/getallnotification", authMiddleware, markAllNotificationsReadController); 
 
-// Delete All Notifications 
+// Delete All Notifications ā
 router.post("/deleteallnotification", authMiddleware, deleteAllNotificationsController); 
 
 // Get User Appointments
-router.get("/getuserappointments", authMiddleware, getUserAppointmentsController);
+router.get('/getuserappointments',authMiddleware,getUserAppointmentsController);
+
+// Protected Route
+router.get('/protected-route', authMiddleware, (req, res) => {
+    console.log("User ID in protected route:", req.userId);
+    res.json({ message: "Access granted", user: req.userId });
+  });
+  
 
 module.exports = router;
